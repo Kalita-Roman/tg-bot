@@ -30,7 +30,7 @@ openssl rand -base64 32
 3. Set up Google OAuth:
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create or select a project
-   - Enable Google+ API
+   - Navigate to "APIs & Services" > "Credentials"
    - Create OAuth 2.0 credentials
    - Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
 
