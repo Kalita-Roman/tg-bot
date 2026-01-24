@@ -1,0 +1,119 @@
+name: Deploy to Google Cloud
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  # App configuration
+  APP_NAME: tg_bot
+  REGION: europe-central2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test --if-present
+
+      - name: Build application
+        run: npm run build --if-present
+
+      - name: Extract project ID from credentials and set image/service names
+        run: |
+          PROJECT_ID=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r '.project_id')
+          echo "PROJECT_ID=${PROJECT_ID}" >> $GITHUB_ENV
+          echo "AR_REPO=${PROJECT_ID}" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${{ env.APP_NAME }}" >> $GITHUB_ENV
+          echo "SERVICE_NAME=${{ env.APP_NAME }}" >> $GITHUB_ENV
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Check Artifact Registry repository
+        run: |
+          set -e
+          if gcloud artifacts repositories describe "${{ env.AR_REPO }}" --location="${{ env.REGION }}" > /dev/null 2>&1; then
+            echo "✓ Artifact Registry repository '${{ env.AR_REPO }}' exists in ${{ env.REGION }}."
+          else
+            echo "✗ Artifact Registry repository '${{ env.AR_REPO }}' does NOT exist in ${{ env.REGION }}."
+            echo "Creating Artifact Registry repository '${{ env.AR_REPO }}'..."
+            gcloud artifacts repositories create "${{ env.AR_REPO }}" \
+              --repository-format=docker \
+              --location="${{ env.REGION }}" \
+              --description="Container images for ${{ env.AR_REPO }}"
+            echo "✓ Repository created successfully."
+          fi
+
+      - name: Check if Docker image exists
+        run: |
+          set -e
+          IMAGE_PATH="${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}"
+          
+          if gcloud artifacts docker images list "${{ env.REGION }}-docker.pkg.dev/${IMAGE_PATH}" --limit=1 > /dev/null 2>&1; then
+            echo "✓ Docker image '${{ env.IMAGE_NAME }}' exists in repository."
+            echo "Existing tags:"
+            gcloud artifacts docker tags list "${{ env.REGION }}-docker.pkg.dev/${IMAGE_PATH}" --limit=5 || true
+          else
+            echo "✗ Docker image '${{ env.IMAGE_NAME }}' does NOT exist yet."
+            echo "This will be the first push for this image."
+          fi
+
+      - name: Build and push Docker image
+        run: |
+          set -e
+          IMAGE_HOST="${{ env.REGION }}-docker.pkg.dev"
+          IMAGE_PATH="${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}"
+          IMAGE_URI="${IMAGE_HOST}/${IMAGE_PATH}"
+
+          gcloud auth configure-docker "${IMAGE_HOST}" --quiet
+
+          echo "Building Docker image..."
+          docker build -t "${IMAGE_URI}:latest" -t "${IMAGE_URI}:${GITHUB_SHA}" .
+          
+          echo "Pushing image with tag: ${GITHUB_SHA}"
+          docker push "${IMAGE_URI}:${GITHUB_SHA}"
+          
+          echo "Pushing image with tag: latest"
+          docker push "${IMAGE_URI}:latest"
+          
+          echo "✓ Image pushed successfully."
+
+      - name: Deploy to Cloud Run
+        run: |
+          set -e
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA}"
+
+          echo "Deploying to Cloud Run service: ${{ env.SERVICE_NAME }}"
+          gcloud run deploy "${{ env.SERVICE_NAME }}" \
+            --image "${IMAGE_URI}" \
+            --platform managed \
+            --region "${{ env.REGION }}" \
+            --allow-unauthenticated \
+            --port 3000 \
+            --cpu 1 \
+            --memory 512Mi \
+            --timeout 300 \
+            --max-instances 10 \
+            --update-env-vars JUST_SECRET=${{ secrets.JUST_SECRET }}
+          
+          echo "✓ Deployment completed successfully."
