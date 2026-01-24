@@ -7,7 +7,7 @@ on:
 
 env:
   # App configuration
-  APP_NAME: tg_bot
+  APP_NAME: tg-bot
   REGION: europe-central2
 
 jobs:
