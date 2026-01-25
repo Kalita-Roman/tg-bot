@@ -1,0 +1,23 @@
+import { getServerSession } from "next-auth/next"
+import { NextResponse } from "next/server"
+import { authOptions } from "../auth/[...nextauth]/route"
+
+export async function GET() {
+  const session = await getServerSession(authOptions)
+  
+  if (!session) {
+    return new NextResponse("Unauthorized", { status: 401 })
+  }
+
+  const currentDateTime = new Date().toLocaleString('en-US', {
+    dateStyle: 'full',
+    timeStyle: 'long'
+  })
+
+  return new NextResponse(currentDateTime, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+  })
+}
