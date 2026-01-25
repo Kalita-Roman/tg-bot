@@ -103,6 +103,18 @@ jobs:
           set -e
           IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA}"
 
+          echo "Getting Cloud Run service URL..."
+          SERVICE_URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" \
+            --region "${{ env.REGION }}" \
+            --format 'value(status.url)' 2>/dev/null || echo "")
+          
+          if [ -z "$SERVICE_URL" ]; then
+            echo "Service does not exist yet, will be created with initial deployment."
+            SERVICE_URL="https://${{ env.SERVICE_NAME }}-placeholder-${{ env.REGION }}.run.app"
+          else
+            echo "Existing service URL: $SERVICE_URL"
+          fi
+
           echo "Deploying to Cloud Run service: ${{ env.SERVICE_NAME }}"
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --image "${IMAGE_URI}" \
@@ -114,6 +126,6 @@ jobs:
             --memory 512Mi \
             --timeout 300 \
             --max-instances 10 \
-            --update-env-vars JUST_SECRET=${{ secrets.JUST_SECRET }}
+            --update-env-vars JUST_SECRET=${{ secrets.JUST_SECRET }},NEXTAUTH_URL=${SERVICE_URL},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
           
           echo "✓ Deployment completed successfully."

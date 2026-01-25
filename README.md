@@ -74,3 +74,18 @@ https://console.cloud.google.com/artifacts/docker/multi-tool-box/europe-central2
 
 🚀 Deployed:  
 https://tg-bot-1001023352343.europe-central2.run.app
+
+### Deployment Configuration
+
+The application automatically deploys to Google Cloud Run when changes are pushed to the `main` branch.
+
+**Required GitHub Secrets:**
+- `GCP_SA_KEY` - Google Cloud service account key (JSON)
+- `GOOGLE_CLIENT_ID` - Google OAuth client ID
+- `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
+- `NEXTAUTH_SECRET` - NextAuth encryption secret (generate with `openssl rand -base64 32`)
+- `JUST_SECRET` - Additional application secret (if needed)
+
+**Environment Variables:**
+- `NEXTAUTH_URL` is automatically set to the Cloud Run service URL during deployment
+- For production, update Google OAuth redirect URI to: `https://your-service-url.run.app/api/auth/callback/google`
