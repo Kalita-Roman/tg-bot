@@ -7,6 +7,9 @@ export default function Home() {
   const { data: session, status } = useSession()
   const [dateTimeResponse, setDateTimeResponse] = useState("")
   const [loading, setLoading] = useState(false)
+  const [telegramMessage, setTelegramMessage] = useState("")
+  const [telegramResponse, setTelegramResponse] = useState("")
+  const [telegramLoading, setTelegramLoading] = useState(false)
 
   const fetchDateTime = async () => {
     setLoading(true)
@@ -25,6 +28,35 @@ export default function Home() {
       setDateTimeResponse("Error: " + error.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const sendTelegramMessage = async (e) => {
+    e.preventDefault()
+    setTelegramLoading(true)
+    setTelegramResponse("")
+    
+    try {
+      const response = await fetch('/api/telegram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: telegramMessage }),
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setTelegramResponse(data.message)
+        setTelegramMessage("") // Clear the form on success
+      } else {
+        setTelegramResponse("Error: " + (data.error || "Failed to send message"))
+      }
+    } catch (error) {
+      setTelegramResponse("Error: " + error.message)
+    } finally {
+      setTelegramLoading(false)
     }
   }
 
@@ -52,6 +84,55 @@ export default function Home() {
               <strong>Response:</strong> {dateTimeResponse}
             </div>
           )}
+
+          <div style={{ marginTop: '40px', borderTop: '2px solid #ddd', paddingTop: '20px' }}>
+            <h2>Send Message to Telegram Bot</h2>
+            <form onSubmit={sendTelegramMessage} style={{ marginTop: '20px' }}>
+              <div style={{ marginBottom: '10px' }}>
+                <textarea
+                  value={telegramMessage}
+                  onChange={(e) => setTelegramMessage(e.target.value)}
+                  placeholder="Enter your message here..."
+                  rows="4"
+                  style={{ 
+                    width: '100%', 
+                    maxWidth: '500px',
+                    padding: '10px', 
+                    fontSize: '14px',
+                    borderRadius: '5px',
+                    border: '1px solid #ccc'
+                  }}
+                  required
+                />
+              </div>
+              <button 
+                type="submit" 
+                disabled={telegramLoading || !telegramMessage.trim()}
+                style={{ 
+                  padding: '10px 20px',
+                  backgroundColor: '#0088cc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: telegramLoading || !telegramMessage.trim() ? 'not-allowed' : 'pointer',
+                  opacity: telegramLoading || !telegramMessage.trim() ? 0.6 : 1
+                }}
+              >
+                {telegramLoading ? 'Sending...' : 'Send to Telegram'}
+              </button>
+            </form>
+            {telegramResponse && (
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '10px', 
+                backgroundColor: telegramResponse.includes('Error') ? '#ffe6e6' : '#e6ffe6', 
+                borderRadius: '5px',
+                color: telegramResponse.includes('Error') ? '#cc0000' : '#006600'
+              }}>
+                <strong>{telegramResponse.includes('Error') ? '❌' : '✅'}</strong> {telegramResponse}
+              </div>
+            )}
+          </div>
         </div>
       )}
       
