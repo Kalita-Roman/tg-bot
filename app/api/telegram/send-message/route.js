@@ -30,7 +30,8 @@ export async function POST(request) {
     }
 
     // Initialize Telegram Bot with the official SDK
-    const bot = new TelegramBot(botToken)
+    // Disable polling since this is a webhook-based API endpoint
+    const bot = new TelegramBot(botToken, { polling: false })
     
     // Send message using the official SDK
     const result = await bot.sendMessage(chatId, message)
@@ -41,9 +42,25 @@ export async function POST(request) {
       data: result
     })
   } catch (error) {
+    // Handle different types of errors from Telegram API
+    let statusCode = 500
+    let errorMessage = error.message || "Failed to send message"
+    
+    // Map common Telegram errors to appropriate status codes
+    if (error.message?.includes('chat not found') || error.message?.includes('CHAT_ID_INVALID')) {
+      statusCode = 400
+      errorMessage = "Invalid chat ID. Please check the chat ID and try again."
+    } else if (error.message?.includes('Unauthorized') || error.message?.includes('EAUTH')) {
+      statusCode = 401
+      errorMessage = "Invalid bot token configuration."
+    } else if (error.message?.includes('bot was blocked')) {
+      statusCode = 403
+      errorMessage = "Bot was blocked by the user. Please unblock the bot and try again."
+    }
+    
     return NextResponse.json(
-      { error: error.message || "Failed to send message" },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     )
   }
 }
