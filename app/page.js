@@ -114,24 +114,27 @@ export default function Home() {
                   color: 'white',
                   border: 'none',
                   borderRadius: '5px',
-                  cursor: telegramLoading || !telegramMessage.trim() ? 'not-allowed' : 'pointer',
-                  opacity: telegramLoading || !telegramMessage.trim() ? 0.6 : 1
+                  cursor: (telegramLoading || !telegramMessage.trim()) ? 'not-allowed' : 'pointer',
+                  opacity: (telegramLoading || !telegramMessage.trim()) ? 0.6 : 1
                 }}
               >
                 {telegramLoading ? 'Sending...' : 'Send to Telegram'}
               </button>
             </form>
-            {telegramResponse && (
-              <div style={{ 
-                marginTop: '20px', 
-                padding: '10px', 
-                backgroundColor: telegramResponse.includes('Error') ? '#ffe6e6' : '#e6ffe6', 
-                borderRadius: '5px',
-                color: telegramResponse.includes('Error') ? '#cc0000' : '#006600'
-              }}>
-                <strong>{telegramResponse.includes('Error') ? '❌' : '✅'}</strong> {telegramResponse}
-              </div>
-            )}
+            {telegramResponse && (() => {
+              const isError = telegramResponse.includes('Error')
+              return (
+                <div style={{ 
+                  marginTop: '20px', 
+                  padding: '10px', 
+                  backgroundColor: isError ? '#ffe6e6' : '#e6ffe6', 
+                  borderRadius: '5px',
+                  color: isError ? '#cc0000' : '#006600'
+                }}>
+                  <strong>{isError ? '❌' : '✅'}</strong> {telegramResponse}
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}
