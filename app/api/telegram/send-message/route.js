@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth/next"
 import { NextResponse } from "next/server"
 import { authOptions } from "../../auth/[...nextauth]/route"
+import TelegramBot from "node-telegram-bot-api"
 
 export async function POST(request) {
   const session = await getServerSession(authOptions)
@@ -28,33 +29,16 @@ export async function POST(request) {
       )
     }
 
-    // Send message to Telegram bot using Telegram Bot API
-    const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`
+    // Initialize Telegram Bot with the official SDK
+    const bot = new TelegramBot(botToken)
     
-    const response = await fetch(telegramApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-      }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: data.description || "Failed to send message to Telegram" },
-        { status: response.status }
-      )
-    }
+    // Send message using the official SDK
+    const result = await bot.sendMessage(chatId, message)
 
     return NextResponse.json({ 
       success: true, 
       message: "Message sent successfully",
-      data 
+      data: result
     })
   } catch (error) {
     return NextResponse.json(
