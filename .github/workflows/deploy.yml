@@ -38,6 +38,7 @@ jobs:
           NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
           TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+          WEBHOOK_BEARER_TOKEN=${{ secrets.WEBHOOK_BEARER_TOKEN }}
           EOF
 
       - name: Extract project ID from credentials and set image/service names
@@ -131,7 +132,7 @@ jobs:
             --memory 512Mi \
             --timeout 300 \
             --max-instances 10 \
-            --update-env-vars NEXTAUTH_URL=${SERVICE_URL},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }},JUST_SECRET=${{ secrets.JUST_SECRET }}
+            --update-env-vars NEXTAUTH_URL=${SERVICE_URL},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }},WEBHOOK_BEARER_TOKEN=${{ secrets.WEBHOOK_BEARER_TOKEN }},JUST_SECRET=${{ secrets.JUST_SECRET }}
           
           # Get the actual service URL after deployment
           ACTUAL_SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
@@ -144,7 +145,7 @@ jobs:
               --platform managed \
               --region "${{ env.REGION }}" \
               --no-traffic \
-              --update-env-vars NEXTAUTH_URL=${ACTUAL_SERVICE_URL},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }},JUST_SECRET=${{ secrets.JUST_SECRET }}
+              --update-env-vars NEXTAUTH_URL=${ACTUAL_SERVICE_URL},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }},WEBHOOK_BEARER_TOKEN=${{ secrets.WEBHOOK_BEARER_TOKEN }},JUST_SECRET=${{ secrets.JUST_SECRET }}
           fi
           
           echo "✓ Deployment completed successfully."
