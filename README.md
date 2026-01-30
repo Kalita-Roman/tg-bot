@@ -1,4 +1,4 @@
-# mindful-chat
+# tg-bot
 
 ## 🌐 Hosting
 
