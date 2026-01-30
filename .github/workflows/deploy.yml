@@ -112,16 +112,7 @@ jobs:
           IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA}"
 
           echo "Deploying to Cloud Run service: ${{ env.SERVICE_NAME }}"
-          
-          # First, get the service URL (handles both new and existing services)
-          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)' 2>/dev/null || echo "")
-          
-          # If service doesn't exist yet, we'll use a placeholder that will be updated after first deployment
-          if [ -z "$SERVICE_URL" ]; then
-            echo "First deployment detected. URL will be retrieved after creation."
-            SERVICE_URL="https://placeholder.com"
-          fi
-          
+
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --image "${IMAGE_URI}" \
             --platform managed \
@@ -132,21 +123,9 @@ jobs:
             --memory 512Mi \
             --timeout 300 \
             --max-instances 10 \
-            --update-env-vars NEXTAUTH_URL=${SERVICE_URL},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }},WEBHOOK_BEARER_TOKEN=${{ secrets.WEBHOOK_BEARER_TOKEN }},JUST_SECRET=${{ secrets.JUST_SECRET }}
-          
-          # Get the actual service URL after deployment
-          ACTUAL_SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
-          
-          # Update with the correct URL if this was first deployment
-          if [ "$SERVICE_URL" = "https://placeholder.com" ]; then
-            echo "Updating service with correct NEXTAUTH_URL: ${ACTUAL_SERVICE_URL}"
-            gcloud run deploy "${{ env.SERVICE_NAME }}" \
-              --image "${IMAGE_URI}" \
-              --platform managed \
-              --region "${{ env.REGION }}" \
-              --no-traffic \
-              --update-env-vars NEXTAUTH_URL=${ACTUAL_SERVICE_URL},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }},WEBHOOK_BEARER_TOKEN=${{ secrets.WEBHOOK_BEARER_TOKEN }},JUST_SECRET=${{ secrets.JUST_SECRET }}
-          fi
-          
+            --update-env-vars NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }},WEBHOOK_BEARER_TOKEN=${{ secrets.WEBHOOK_BEARER_TOKEN }},JUST_SECRET=${{ secrets.JUST_SECRET }}
+
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
+
           echo "✓ Deployment completed successfully."
-          echo "Service URL: ${ACTUAL_SERVICE_URL}"
+          echo "Service URL: ${SERVICE_URL}"
