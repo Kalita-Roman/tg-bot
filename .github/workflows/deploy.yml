@@ -6,9 +6,9 @@ on:
       - main
 
 env:
-  # App configuration
-  APP_NAME: tg-bot
-  REGION: europe-central2
+  # App configuration - Customize these for your deployment
+  APP_NAME: tg-bot  # Change this to your desired Cloud Run service name
+  REGION: europe-central2  # Change this to your preferred Google Cloud region (see: https://cloud.google.com/run/docs/locations)
 
 jobs:
   deploy:
@@ -32,6 +32,8 @@ jobs:
 
       - name: Create .env.local for build
         run: |
+          # Create .env.local file with all required environment variables for the Next.js build
+          # These values are pulled from GitHub Secrets (configure in: Settings → Secrets and variables → Actions)
           cat > .env.local << EOF
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -43,6 +45,8 @@ jobs:
 
       - name: Extract project ID from credentials and set image/service names
         run: |
+          # Extract the Google Cloud project ID from the service account JSON key
+          # This ensures we use the correct project without hardcoding it
           PROJECT_ID=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r '.project_id')
           echo "PROJECT_ID=${PROJECT_ID}" >> $GITHUB_ENV
           echo "AR_REPO=${PROJECT_ID}" >> $GITHUB_ENV
@@ -52,6 +56,9 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
+          # GCP_SA_KEY should contain the full JSON key of your service account
+          # Create in: Google Cloud Console → IAM & Admin → Service Accounts
+          # Configure in: GitHub repo Settings → Secrets and variables → Actions
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
@@ -60,6 +67,8 @@ jobs:
       - name: Check Artifact Registry repository
         run: |
           set -e
+          # Check if Artifact Registry repository exists, create if it doesn't
+          # This repository stores Docker images for your application
           if gcloud artifacts repositories describe "${{ env.AR_REPO }}" --location="${{ env.REGION }}" > /dev/null 2>&1; then
             echo "✓ Artifact Registry repository '${{ env.AR_REPO }}' exists in ${{ env.REGION }}."
           else
@@ -113,6 +122,14 @@ jobs:
 
           echo "Deploying to Cloud Run service: ${{ env.SERVICE_NAME }}"
 
+          # Deploy the Docker image to Cloud Run
+          # Key configuration:
+          # - allow-unauthenticated: Makes the service publicly accessible
+          # - port 3000: Next.js default port
+          # - cpu/memory: Resource allocation (adjust based on your needs)
+          # - timeout: Maximum request duration in seconds
+          # - max-instances: Scales up to 10 instances under load
+          # All environment variables are passed from GitHub Secrets
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --image "${IMAGE_URI}" \
             --platform managed \

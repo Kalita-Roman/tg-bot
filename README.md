@@ -1,5 +1,14 @@
 # tg-bot
 
+A Next.js application with Google OAuth authentication and Telegram integration, deployed to Google Cloud Run.
+
+## 🚀 Quick Setup for New Deployment
+
+Setting up a new Google Cloud project for deployment? See:
+
+- **[Quick Start Guide](./QUICK_START.md)** - 30-minute setup walkthrough
+- **[Complete Setup Guide](./SETUP_GOOGLE_CLOUD.md)** - Detailed instructions with troubleshooting
+
 ## 🌐 Hosting
 
 📂 Google Cloud:  
