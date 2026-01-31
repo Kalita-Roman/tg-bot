@@ -34,6 +34,10 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built application from builder stage
 COPY --from=builder /app/.next ./.next
 
+# Copy necessary files for Next.js App Router to work
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/app ./app
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S tech_user -u 1001
